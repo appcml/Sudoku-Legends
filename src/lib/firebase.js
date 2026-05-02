@@ -34,14 +34,14 @@ import {
   arrayUnion,
 } from 'firebase/firestore';
 
-// ⚠️  REPLACE WITH YOUR FIREBASE CONFIG
 const firebaseConfig = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT.firebaseapp.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID",
+  apiKey:            "AIzaSyBRhjjrgnU1UW7NiDTMz-Y_WXajIkhbNRs",
+  authDomain:        "sudoku-legends-d1f30.firebaseapp.com",
+  projectId:         "sudoku-legends-d1f30",
+  storageBucket:     "sudoku-legends-d1f30.firebasestorage.app",
+  messagingSenderId: "358698666007",
+  appId:             "1:358698666007:web:b82e55336a3fc264cef452",
+  measurementId:     "G-SP99MV5G5Z",
 };
 
 const app  = initializeApp(firebaseConfig);
