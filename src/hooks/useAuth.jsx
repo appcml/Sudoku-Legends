@@ -2,16 +2,36 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import {
   onAuth, loginAnonymous, loginGoogle, loginApple,
   loginEmail, registerEmail, createUserProfile, getUserProfile,
-  assignAutoGroup,
+  assignAutoGroup, getRedirectResult, auth,
 } from '../lib/firebase';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser]       = useState(undefined); // undefined = loading
+  const [user, setUser]       = useState(undefined);
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
+    // Handle redirect result on mobile after Google login
+    getRedirectResult(auth).then(async (result) => {
+      if (result?.user) {
+        let p = await getUserProfile(result.user.uid);
+        if (!p) {
+          await createUserProfile(result.user.uid, {
+            displayName: result.user.displayName || 'Player',
+            avatar:      result.user.photoURL    || null,
+            isAnonymous: false,
+          });
+          p = await getUserProfile(result.user.uid);
+          if (!p.groupId) {
+            await assignAutoGroup(result.user.uid, 'beginner');
+            p = await getUserProfile(result.user.uid);
+          }
+        }
+        setProfile(p);
+      }
+    }).catch(() => {});
+
     const unsub = onAuth(async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
@@ -23,8 +43,6 @@ export function AuthProvider({ children }) {
             isAnonymous: firebaseUser.isAnonymous,
           });
           p = await getUserProfile(firebaseUser.uid);
-
-          // Auto-assign to a group if new user
           if (!p.groupId) {
             await assignAutoGroup(firebaseUser.uid, 'beginner');
             p = await getUserProfile(firebaseUser.uid);
@@ -49,12 +67,12 @@ export function AuthProvider({ children }) {
     user,
     profile,
     refreshProfile,
-    isLoading:   user === undefined,
-    isAnonymous: user?.isAnonymous ?? true,
-    signInAnon:  loginAnonymous,
-    signInGoogle:loginGoogle,
-    signInApple: loginApple,
-    signInEmail: loginEmail,
+    isLoading:    user === undefined,
+    isAnonymous:  user?.isAnonymous ?? true,
+    signInAnon:   loginAnonymous,
+    signInGoogle: loginGoogle,
+    signInApple:  loginApple,
+    signInEmail:  loginEmail,
     registerEmail,
   };
 
