@@ -1,0 +1,6 @@
+{
+	"appId": "com.appcml.sudokulegends",
+	"appName": "Sudoku Legends",
+	"webDir": "dist",
+	"android": {}
+}
