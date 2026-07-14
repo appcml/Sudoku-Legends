@@ -1,0 +1,19 @@
+# Node
+node_modules/
+dist/
+
+# Android / Gradle
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/release.keystore
+build/
+
+# Nunca subir el keystore ni credenciales
+*.keystore
+*.jks
+
+# OS
+.DS_Store
+Thumbs.db
