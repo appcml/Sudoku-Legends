@@ -2,13 +2,15 @@
 // Pure JS: generate, solve, validate puzzles for all 7 difficulty levels
 
 export const LEVELS = {
-  beginner:    { id: 'beginner',    clues: [46, 50], hints: 99, timer: null,  mult: 1.0,  label: '🌱', name: { es: 'Principiante', en: 'Beginner',    pt: 'Iniciante'   } },
-  easy:        { id: 'easy',        clues: [40, 45], hints: 5,  timer: 1800,  mult: 1.5,  label: '⭐', name: { es: 'Fácil',        en: 'Easy',        pt: 'Fácil'       } },
+  // hints = pistas gratuitas al inicio de cada partida.
+  // Al agotarse, el usuario puede ver un anuncio para ganar +2 pistas más (máx 3 anuncios/sesión).
+  beginner:    { id: 'beginner',    clues: [46, 50], hints: 5,  timer: null,  mult: 1.0,  label: '🌱', name: { es: 'Principiante', en: 'Beginner',    pt: 'Iniciante'   } },
+  easy:        { id: 'easy',        clues: [40, 45], hints: 4,  timer: 1800,  mult: 1.5,  label: '⭐', name: { es: 'Fácil',        en: 'Easy',        pt: 'Fácil'       } },
   intermediate:{ id: 'intermediate',clues: [32, 39], hints: 3,  timer: 1200,  mult: 2.0,  label: '🔥', name: { es: 'Intermedio',   en: 'Intermediate',pt: 'Intermediário'} },
-  hard:        { id: 'hard',        clues: [26, 31], hints: 1,  timer: 900,   mult: 3.0,  label: '💀', name: { es: 'Duro',         en: 'Hard',        pt: 'Difícil'     } },
-  expert:      { id: 'expert',      clues: [22, 25], hints: 0,  timer: 600,   mult: 4.0,  label: '🐉', name: { es: 'Experto',      en: 'Expert',      pt: 'Especialista'} },
-  nightmare:   { id: 'nightmare',   clues: [17, 21], hints: 0,  timer: 480,   mult: 6.0,  label: '😱', name: { es: 'Pesadilla',    en: 'Nightmare',   pt: 'Pesadelo'    } },
-  hell:        { id: 'hell',        clues: [9,  16], hints: 0,  timer: 300,   mult: 10.0, label: '😈', name: { es: 'Infierno',     en: 'Hell',        pt: 'Inferno'     } },
+  hard:        { id: 'hard',        clues: [26, 31], hints: 3,  timer: 900,   mult: 3.0,  label: '💀', name: { es: 'Duro',         en: 'Hard',        pt: 'Difícil'     } },
+  expert:      { id: 'expert',      clues: [22, 25], hints: 3,  timer: 600,   mult: 4.0,  label: '🐉', name: { es: 'Experto',      en: 'Expert',      pt: 'Especialista'} },
+  nightmare:   { id: 'nightmare',   clues: [17, 21], hints: 3,  timer: 480,   mult: 6.0,  label: '😱', name: { es: 'Pesadilla',    en: 'Nightmare',   pt: 'Pesadelo'    } },
+  hell:        { id: 'hell',        clues: [9,  16], hints: 3,  timer: 300,   mult: 10.0, label: '😈', name: { es: 'Infierno',     en: 'Hell',        pt: 'Inferno'     } },
 };
 
 export const LEVEL_ORDER = ['beginner','easy','intermediate','hard','expert','nightmare','hell'];
