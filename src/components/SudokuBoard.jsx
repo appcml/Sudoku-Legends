@@ -127,12 +127,12 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
     setHints(h => h - 1);
   };
 
-  // Ver anuncio para ganar +3 pistas
+  // Ver anuncio para ganar +2 pistas extra
   const handleAdHint = async () => {
     setAdHintState('loading');
     const rewarded = await showRewardedAd({ testMode: !import.meta.env.PROD });
     if (rewarded) {
-      setHints(h => h + 3);
+      setHints(h => h + 2);
       setAdHintState('idle');
     } else {
       setAdHintState('incomplete');
@@ -213,8 +213,8 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
 
   const progress = board.flat().filter(v => v !== 0).length / 81;
 
-  // Mostrar botón de anuncio para pistas cuando se acabaron y hay anuncios disponibles
-  const showAdHintBtn = hints === 0 && level.hints !== 99 && canWatchAd();
+  // Mostrar botón de anuncio cuando las pistas gratuitas se agotaron y hay anuncios disponibles
+  const showAdHintBtn = hints === 0 && canWatchAd();
 
   return (
     <div style={{
@@ -383,7 +383,7 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
               opacity: adHintState === 'loading' ? 0.6 : 1,
             }}
           >
-            {adHintState === 'loading' ? '⏳' : '📺 +3 💡'}
+            {adHintState === 'loading' ? '⏳ Cargando...' : '📺 Ver anuncio +2 💡'}
           </button>
         )}
 
