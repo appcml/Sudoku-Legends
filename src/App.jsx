@@ -45,7 +45,7 @@ export default function App() {
 
       {screen === 'home'         && <HomeScreen profile={profile} onPlay={() => setScreen('level-select')} onNav={setScreen} />}
       {screen === 'level-select' && <LevelSelect profile={profile} onSelect={handleLevelSelect} />}
-      {screen === 'game'         && <SudokuBoard levelId={levelId} onComplete={handleGameComplete} onGiveUp={handleGiveUp} />}
+      {screen === 'game'         && <SudokuBoard levelId={levelId} onComplete={handleGameComplete} onGiveUp={handleGiveUp} onHome={goHome} />}
       {screen === 'complete' && gameResult && (
         <GameComplete result={gameResult} onNewGame={() => setScreen('game')} onHome={goHome} onWatchAd={handleAdWatched} />
       )}
