@@ -43,6 +43,13 @@ export default function App() {
     setScreen('level-select');
   };
 
+  // Se llama desde GameComplete cuando el usuario completa un anuncio recompensado
+  const handleAdWatched = (bonusPts) => {
+    // TODO: actualizar puntos en Firestore cuando esté integrado
+    // updateUserPoints(user.uid, bonusPts);
+    console.log('[AdMob] Recompensa concedida:', bonusPts, 'pts');
+  };
+
   return (
     <>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -76,7 +83,7 @@ export default function App() {
           result={gameResult}
           onNewGame={() => setScreen('game')}
           onHome={() => setScreen('home')}
-          onWatchAd={(pts) => console.log('Ad watched, +', pts, 'pts')}
+          onWatchAd={handleAdWatched}
         />
       )}
     </>
