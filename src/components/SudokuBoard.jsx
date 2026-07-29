@@ -10,37 +10,37 @@ function formatTime(secs) {
   return `${m}:${s}`;
 }
 
-export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp, onHome }) {
+export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp, onHome, onBack }) {
   const { t } = useTranslation();
   const theme = THEMES[levelId];
   const level = LEVELS[levelId];
 
-  const [gameData, setGameData]     = useState(null);
-  const [board, setBoard]           = useState(null);
-  const [selected, setSelected]     = useState(null);
-  const [noteMode, setNoteMode]     = useState(false);
-  const [notes, setNotes]           = useState({});
-  const [errors, setErrors]         = useState(0);
-  const [hints, setHints]           = useState(level.hints);
-  const [timeSpent, setTimeSpent]   = useState(0);
-  const [paused, setPaused]         = useState(false);
-  const [completed, setCompleted]   = useState(false);
-  const [wrongCells, setWrongCells] = useState(new Set());
-  const [flashCells, setFlashCells] = useState(new Set());
+  const [gameData, setGameData]       = useState(null);
+  const [board, setBoard]             = useState(null);
+  const [selected, setSelected]       = useState(null);
+  const [noteMode, setNoteMode]       = useState(false);
+  const [notes, setNotes]             = useState({});
+  const [errors, setErrors]           = useState(0);
+  const [hints, setHints]             = useState(level.hints);
+  const [timeSpent, setTimeSpent]     = useState(0);
+  const [paused, setPaused]           = useState(false);
+  const [completed, setCompleted]     = useState(false);
+  const [wrongCells, setWrongCells]   = useState(new Set());
+  const [flashCells, setFlashCells]   = useState(new Set());
   const [adHintState, setAdHintState] = useState('idle');
-  const [cellSize, setCellSize]     = useState(36);
-  const boardRef = useRef(null);
+  const [cellSize, setCellSize]       = useState(38);
   const timerRef = useRef(null);
 
-  // Calcular tamaño de celda dinámicamente (fix aspectRatio en Android)
+  // Tamaño de celda dinámico — usa casi todo el ancho disponible
   useEffect(() => {
-    const updateSize = () => {
-      const w = Math.min(window.innerWidth - 24, 420);
-      setCellSize(Math.floor(w / 9));
+    const update = () => {
+      // Padding lateral 8px cada lado = 16px total
+      const available = Math.min(window.innerWidth - 16, 500);
+      setCellSize(Math.floor(available / 9));
     };
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
   }, []);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
     return () => clearInterval(timerRef.current);
   }, [gameData, paused, completed]);
 
-  const timeLeft = level.timer ? Math.max(0, level.timer - timeSpent) : null;
+  const timeLeft    = level.timer ? Math.max(0, level.timer - timeSpent) : null;
   const timerWarning = timeLeft !== null && timeLeft < 60;
 
   const handleNumber = useCallback((num) => {
@@ -83,9 +83,9 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
       });
       return;
     }
-    const newBoard = board.map(row => [...row]);
-    newBoard[r][c] = num;
-    setBoard(newBoard);
+    const nb = board.map(row => [...row]);
+    nb[r][c] = num;
+    setBoard(nb);
     if (num !== gameData.solution[r][c]) {
       setErrors(e => e + 1);
       const key = `${r}-${c}`;
@@ -93,10 +93,10 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
       setTimeout(() => setWrongCells(prev => { const s = new Set(prev); s.delete(key); return s; }), 1000);
     } else {
       const matches = new Set();
-      for (let i = 0; i < 9; i++) for (let j = 0; j < 9; j++) if (newBoard[i][j] === num) matches.add(`${i}-${j}`);
+      for (let i = 0; i < 9; i++) for (let j = 0; j < 9; j++) if (nb[i][j] === num) matches.add(`${i}-${j}`);
       setFlashCells(matches);
       setTimeout(() => setFlashCells(new Set()), 600);
-      if (isBoardComplete(newBoard, gameData.solution)) {
+      if (isBoardComplete(nb, gameData.solution)) {
         setCompleted(true);
         clearInterval(timerRef.current);
         const score = calculateScore({ levelId, timeSpent, timerLimit: level.timer, errors, hints: level.hints - hints });
@@ -109,9 +109,9 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
     if (!selected || hints <= 0 || !gameData || paused) return;
     const [r, c] = selected;
     if (gameData.puzzle[r][c] !== 0 || board[r][c] === gameData.solution[r][c]) return;
-    const newBoard = board.map(row => [...row]);
-    newBoard[r][c] = gameData.solution[r][c];
-    setBoard(newBoard);
+    const nb = board.map(row => [...row]);
+    nb[r][c] = gameData.solution[r][c];
+    setBoard(nb);
     setHints(h => h - 1);
   };
 
@@ -126,14 +126,14 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
     if (!selected || !gameData || paused) return;
     const [r, c] = selected;
     if (gameData.puzzle[r][c] !== 0) return;
-    const newBoard = board.map(row => [...row]);
-    newBoard[r][c] = 0;
-    setBoard(newBoard);
+    const nb = board.map(row => [...row]);
+    nb[r][c] = 0;
+    setBoard(nb);
     setNotes(prev => { const n = { ...prev }; delete n[`${r}-${c}`]; return n; });
   };
 
   useEffect(() => {
-    const handler = (e) => {
+    const h = (e) => {
       if (e.key >= '1' && e.key <= '9') handleNumber(parseInt(e.key));
       if (e.key === 'Backspace' || e.key === 'Delete') handleErase();
       if (!selected) return;
@@ -143,8 +143,8 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
       if (e.key === 'ArrowLeft')  setSelected([r,Math.max(0,c-1)]);
       if (e.key === 'ArrowRight') setSelected([r,Math.min(8,c+1)]);
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
   }, [handleNumber, selected]);
 
   if (!board || !gameData) return (
@@ -154,28 +154,39 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
   );
 
   const getCellBg = (r, c) => {
-    const isGiven = gameData.puzzle[r][c] !== 0;
-    const isSelected = selected?.[0]===r && selected?.[1]===c;
-    const isWrong = wrongCells.has(`${r}-${c}`);
-    const isFlash = flashCells.has(`${r}-${c}`);
-    const selR = selected?.[0], selC = selected?.[1];
-    const isHighlight = selR!==undefined && (r===selR || c===selC || (Math.floor(r/3)===Math.floor(selR/3) && Math.floor(c/3)===Math.floor(selC/3)));
-    const isSameNum = selected && board[selR]?.[selC]!==0 && board[r][c]===board[selR]?.[selC];
+    const isGiven   = gameData.puzzle[r][c] !== 0;
+    const isSel     = selected?.[0]===r && selected?.[1]===c;
+    const isWrong   = wrongCells.has(`${r}-${c}`);
+    const isFlash   = flashCells.has(`${r}-${c}`);
+    const [sR, sC]  = selected || [];
+    const isHL      = sR!==undefined && (r===sR || c===sC || (Math.floor(r/3)===Math.floor(sR/3) && Math.floor(c/3)===Math.floor(sC/3)));
+    const isSameNum = selected && board[sR]?.[sC]!==0 && board[r][c]===board[sR]?.[sC];
     if (isWrong)  return '#ff000033';
     if (isFlash)  return theme.accent + '99';
-    if (isSelected) return theme.selected;
-    if (isSameNum) return theme.accent + '44';
-    if (isHighlight) return theme.highlight;
+    if (isSel)    return theme.selected;
+    if (isSameNum)return theme.accent + '44';
+    if (isHL)     return theme.highlight;
     return isGiven ? theme.cellGiven : theme.cell;
   };
 
-  const progress = board.flat().filter(v => v !== 0).length / 81;
-  const showAdHintBtn = hints === 0 && canWatchAd();
-  const boardSize = cellSize * 9;
+  const progress       = board.flat().filter(v => v !== 0).length / 81;
+  const showAdHintBtn  = hints === 0 && canWatchAd();
+  const boardPx        = cellSize * 9;
+  const numBtnH        = Math.max(38, cellSize * 0.88);
+  const fontSize       = Math.max(15, cellSize * 0.46);
 
   return (
-    <div style={{ minHeight:'100dvh', background:theme.bg, fontFamily:theme.font, display:'flex', flexDirection:'column', alignItems:'center', padding:'8px 12px 12px', color:theme.text, boxSizing:'border-box' }}>
-
+    <div style={{
+      minHeight: '100dvh',
+      background: theme.bg,
+      fontFamily: theme.font,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '6px 8px 10px',
+      color: theme.text,
+      boxSizing: 'border-box',
+    }}>
       {theme.glitch && (
         <style>{`
           @keyframes glitch{0%,100%{clip-path:inset(0 0 98% 0)}20%{clip-path:inset(40% 0 50% 0)}40%{clip-path:inset(60% 0 10% 0)}60%{clip-path:inset(80% 0 5% 0)}80%{clip-path:inset(10% 0 70% 0)}}
@@ -186,62 +197,100 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
       )}
       {theme.glitch && <div className="go" />}
 
-      {/* ── Top bar: volver + stats + timer + pausa ── */}
-      <div style={{ width:'100%', maxWidth:420, display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
-        {/* Botón volver al menú principal */}
+      {/* ── Top bar ── */}
+      <div style={{ width:'100%', maxWidth: boardPx, display:'flex', alignItems:'center', gap:6, marginBottom:5 }}>
+
+        {/* ‹ Atrás — vuelve a selección de nivel */}
+        <button
+          onClick={() => onBack?.() || onGiveUp?.()}
+          style={{
+            background: 'none',
+            border: `1.5px solid ${theme.border}`,
+            borderRadius: 8,
+            color: theme.text,
+            fontSize: 20,
+            padding: '3px 10px',
+            cursor: 'pointer',
+            lineHeight: 1.3,
+            flexShrink: 0,
+          }}
+        >‹</button>
+
+        {/* 🏠 Home */}
         <button
           onClick={onHome}
-          style={{ background:'none', border:`1px solid ${theme.border}`, borderRadius:8, color:theme.text, fontSize:18, padding:'4px 10px', cursor:'pointer', lineHeight:1.2, flexShrink:0 }}
+          style={{
+            background: 'none',
+            border: `1.5px solid ${theme.border}`,
+            borderRadius: 8,
+            color: theme.text,
+            fontSize: 16,
+            padding: '3px 8px',
+            cursor: 'pointer',
+            lineHeight: 1.4,
+            flexShrink: 0,
+          }}
         >🏠</button>
 
         {/* Stats */}
-        <div style={{ flex:1, display:'flex', gap:10, fontSize:12, opacity:0.85 }}>
+        <div style={{ flex:1, display:'flex', gap:10, fontSize:13 }}>
           <span>❌ {errors}</span>
           <span>💡 {hints}</span>
         </div>
 
         {/* Timer */}
-        <div style={{ fontSize: timerWarning?17:14, fontWeight:'700', color: timerWarning?'#ff3d00':theme.primary, animation: timerWarning?'pulse 1s infinite':'none', flexShrink:0 }}>
+        <div style={{
+          fontSize: timerWarning ? 17 : 15,
+          fontWeight: '700',
+          color: timerWarning ? '#ff3d00' : theme.primary,
+          animation: timerWarning ? 'pulse 1s infinite' : 'none',
+          flexShrink: 0,
+        }}>
           {timeLeft !== null ? formatTime(timeLeft) : formatTime(timeSpent)}
         </div>
 
         {/* Pausa */}
         <button
           onClick={() => setPaused(p => !p)}
-          style={{ background:'none', border:`1px solid ${theme.border}`, borderRadius:8, padding:'4px 8px', color:theme.text, cursor:'pointer', fontSize:11, flexShrink:0 }}
+          style={{
+            background: paused ? theme.accent + '33' : 'none',
+            border: `1.5px solid ${theme.border}`,
+            borderRadius: 8,
+            padding: '3px 8px',
+            color: theme.text,
+            cursor: 'pointer',
+            fontSize: 14,
+            flexShrink: 0,
+          }}
         >{paused ? '▶' : '⏸'}</button>
       </div>
 
       {/* Progress bar */}
-      <div style={{ width:'100%', maxWidth:420, height:3, background:theme.border+'44', borderRadius:2, marginBottom:8 }}>
-        <div style={{ width:`${progress*100}%`, height:'100%', background:theme.accent, borderRadius:2, transition:'width 0.3s' }} />
+      <div style={{ width:'100%', maxWidth: boardPx, height: 3, background: theme.border+'44', borderRadius: 2, marginBottom: 6 }}>
+        <div style={{ width:`${progress*100}%`, height:'100%', background: theme.accent, borderRadius: 2, transition:'width 0.3s' }} />
       </div>
 
       {/* ── Tablero ── */}
       {paused ? (
         <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16 }}>
-          <div style={{ fontSize:48 }}>⏸</div>
+          <div style={{ fontSize:52 }}>⏸</div>
           <div style={{ color:theme.text, fontSize:18, opacity:0.7 }}>Juego pausado</div>
           <button onClick={() => setPaused(false)} style={{ padding:'12px 32px', background:theme.primary, border:'none', borderRadius:12, color:theme.dark?'#000':'#fff', fontSize:16, fontWeight:'700', fontFamily:theme.font, cursor:'pointer' }}>
             ▶ Continuar
           </button>
         </div>
       ) : (
-        /* Tablero con tamaño calculado en px — sin aspectRatio (no funciona bien en Android WebView) */
-        <div
-          ref={boardRef}
-          style={{
-            width: boardSize,
-            height: boardSize,
-            display: 'grid',
-            gridTemplateColumns: `repeat(9, ${cellSize}px)`,
-            gridTemplateRows: `repeat(9, ${cellSize}px)`,
-            border: `2px solid ${theme.primary}`,
-            borderRadius: 8,
-            overflow: 'hidden',
-            flexShrink: 0,
-          }}
-        >
+        <div style={{
+          width: boardPx,
+          height: boardPx,
+          display: 'grid',
+          gridTemplateColumns: `repeat(9, ${cellSize}px)`,
+          gridTemplateRows: `repeat(9, ${cellSize}px)`,
+          border: `2.5px solid ${theme.primary}`,
+          borderRadius: 8,
+          overflow: 'hidden',
+          flexShrink: 0,
+        }}>
           {board.map((row, r) => row.map((val, c) => {
             const key = `${r}-${c}`;
             const isGiven = gameData.puzzle[r][c] !== 0;
@@ -252,18 +301,22 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
                 key={key}
                 onClick={() => !completed && setSelected([r, c])}
                 style={{
-                  width: cellSize, height: cellSize,
+                  width: cellSize,
+                  height: cellSize,
                   background: getCellBg(r, c),
                   color: isWrong ? theme.error : (isGiven ? theme.given : theme.text),
                   fontWeight: isGiven ? '700' : '500',
                   fontFamily: theme.font,
-                  fontSize: Math.max(14, cellSize * 0.45),
+                  fontSize,
                   cursor: isGiven ? 'default' : 'pointer',
                   transition: 'background 0.12s',
-                  borderRight: (c+1)%3===0 && c<8 ? `2px solid ${theme.primary}` : `1px solid ${theme.border}`,
+                  borderRight:  (c+1)%3===0 && c<8 ? `2px solid ${theme.primary}` : `1px solid ${theme.border}`,
                   borderBottom: (r+1)%3===0 && r<8 ? `2px solid ${theme.primary}` : `1px solid ${theme.border}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  userSelect: 'none', WebkitTapHighlightColor: 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  userSelect: 'none',
+                  WebkitTapHighlightColor: 'transparent',
                   boxSizing: 'border-box',
                 }}
               >
@@ -283,44 +336,52 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
 
       {/* Aviso anuncio incompleto */}
       {adHintState === 'incomplete' && (
-        <div style={{ width:'100%', maxWidth:420, marginTop:6, padding:'6px 10px', background:'#ff3d0022', border:'1px solid #ff3d00', borderRadius:8, textAlign:'center', color:'#ff3d00', fontSize:11 }}>
+        <div style={{ width:'100%', maxWidth:boardPx, marginTop:5, padding:'6px 10px', background:'#ff3d0022', border:'1px solid #ff3d00', borderRadius:8, textAlign:'center', color:'#ff3d00', fontSize:11 }}>
           ⚠️ Debes ver el anuncio completo para ganar las pistas
         </div>
       )}
 
       {/* ── Teclado numérico ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(9,1fr)', gap:3, width:'100%', maxWidth:420, marginTop:10 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(9,1fr)', gap:3, width:'100%', maxWidth:boardPx, marginTop:8 }}>
         {[1,2,3,4,5,6,7,8,9].map(n => {
           const used = board.flat().filter(v => v === n).length;
           return (
             <button key={n} onClick={() => handleNumber(n)} disabled={used >= 9} style={{
-              height: Math.max(36, cellSize * 0.9),
+              height: numBtnH,
               background: used>=9 ? theme.border+'22' : theme.cell,
-              border: `1px solid ${theme.border}`, borderRadius:8,
+              border: `1px solid ${theme.border}`,
+              borderRadius: 8,
               color: used>=9 ? theme.border : theme.primary,
-              fontSize: Math.max(16, cellSize * 0.4), fontWeight:'700', fontFamily:theme.font,
-              cursor: used>=9 ? 'default' : 'pointer', opacity: used>=9 ? 0.3 : 1,
+              fontSize: Math.max(17, cellSize * 0.42),
+              fontWeight: '700',
+              fontFamily: theme.font,
+              cursor: used>=9 ? 'default' : 'pointer',
+              opacity: used>=9 ? 0.25 : 1,
             }}>{n}</button>
           );
         })}
       </div>
 
       {/* ── Controles ── */}
-      <div style={{ display:'flex', gap:6, marginTop:8, width:'100%', maxWidth:420 }}>
-        <Btn theme={theme} onClick={handleErase}>✕ Borrar</Btn>
-        <Btn theme={theme} onClick={() => setNoteMode(m=>!m)} active={noteMode}>✎ Notas{noteMode?' ON':''}</Btn>
-        {hints > 0 && <Btn theme={theme} onClick={handleHint}>💡 Pista ({hints})</Btn>}
+      <div style={{ display:'flex', gap:6, marginTop:7, width:'100%', maxWidth:boardPx }}>
+        <CtrlBtn theme={theme} onClick={handleErase}>✕ Borrar</CtrlBtn>
+        <CtrlBtn theme={theme} onClick={() => setNoteMode(m => !m)} active={noteMode}>
+          ✎ Notas{noteMode ? ' ON' : ''}
+        </CtrlBtn>
+        {hints > 0 && (
+          <CtrlBtn theme={theme} onClick={handleHint}>💡 Pista ({hints})</CtrlBtn>
+        )}
         {showAdHintBtn && (
           <button onClick={handleAdHint} disabled={adHintState==='loading'} style={{
-            flex:1, padding:'8px 4px',
+            flex: 1, padding: '8px 2px',
             background: adHintState==='loading' ? theme.border+'44' : 'linear-gradient(135deg,#ffd700,#ff8f00)',
-            border:'none', borderRadius:8,
+            border: 'none', borderRadius: 8,
             color: adHintState==='loading' ? theme.text : '#0d1b2a',
-            fontFamily:theme.font, fontSize:11, fontWeight:'700',
+            fontFamily: theme.font, fontSize: 11, fontWeight: '700',
             cursor: adHintState==='loading' ? 'not-allowed' : 'pointer',
           }}>{adHintState==='loading' ? '⏳' : '📺 +2 💡'}</button>
         )}
-        <Btn theme={theme} onClick={() => onGiveUp?.()} danger>🏳 Salir</Btn>
+        <CtrlBtn theme={theme} onClick={() => onGiveUp?.()} danger>🏳 Salir</CtrlBtn>
       </div>
 
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
@@ -328,14 +389,17 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
   );
 }
 
-function Btn({ theme, onClick, children, active, danger }) {
+function CtrlBtn({ theme, onClick, children, active, danger }) {
   return (
     <button onClick={onClick} style={{
-      flex:1, padding:'8px 2px',
+      flex: 1, padding: '8px 2px',
       background: active ? theme.accent+'33' : 'transparent',
-      border: `1px solid ${theme.border}`, borderRadius:8,
+      border: `1px solid ${theme.border}`,
+      borderRadius: 8,
       color: danger ? theme.error : theme.text,
-      fontFamily:theme.font, fontSize:11, cursor:'pointer',
+      fontFamily: theme.font,
+      fontSize: 11,
+      cursor: 'pointer',
     }}>{children}</button>
   );
 }
