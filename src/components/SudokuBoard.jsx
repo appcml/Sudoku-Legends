@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { generatePuzzle, isBoardComplete, calculateScore, LEVELS } from '../lib/sudoku';
 import { THEMES } from '../lib/themes';
 import { useTranslation } from 'react-i18next';
+import { showRewardedAd, canWatchAd } from '../lib/adsService';
 
 function formatTime(secs) {
-  const m = Math.floor(secs / 60).toString().padStart(2, '0');
+  const m = Math.floor(secs / 60).toString().padStart(2, '00');
   const s = (secs % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
 }
@@ -26,6 +27,8 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
   const [completed, setCompleted]     = useState(false);
   const [wrongCells, setWrongCells]   = useState(new Set());
   const [flashCells, setFlashCells]   = useState(new Set());
+  // Estado del botón de anuncio para +3 pistas
+  const [adHintState, setAdHintState] = useState('idle'); // 'idle' | 'loading' | 'incomplete'
   const timerRef = useRef(null);
 
   // Init game
@@ -40,6 +43,7 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
     setNotes({});
     setWrongCells(new Set());
     setCompleted(false);
+    setAdHintState('idle');
   }, [levelId]);
 
   // Timer
@@ -123,6 +127,19 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
     setHints(h => h - 1);
   };
 
+  // Ver anuncio para ganar +3 pistas
+  const handleAdHint = async () => {
+    setAdHintState('loading');
+    const rewarded = await showRewardedAd({ testMode: !import.meta.env.PROD });
+    if (rewarded) {
+      setHints(h => h + 3);
+      setAdHintState('idle');
+    } else {
+      setAdHintState('incomplete');
+      setTimeout(() => setAdHintState('idle'), 3000);
+    }
+  };
+
   const handleErase = () => {
     if (!selected || !gameData) return;
     const [r, c] = selected;
@@ -195,6 +212,9 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
   };
 
   const progress = board.flat().filter(v => v !== 0).length / 81;
+
+  // Mostrar botón de anuncio para pistas cuando se acabaron y hay anuncios disponibles
+  const showAdHintBtn = hints === 0 && level.hints !== 99 && canWatchAd();
 
   return (
     <div style={{
@@ -295,6 +315,19 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
         </div>
       )}
 
+      {/* Mensaje si anuncio de pistas no se completó */}
+      {adHintState === 'incomplete' && (
+        <div style={{
+          width: '100%', maxWidth: 420,
+          marginTop: 8, padding: '8px 12px',
+          background: '#ff3d0022', border: '1px solid #ff3d00',
+          borderRadius: 8, textAlign: 'center',
+          color: '#ff3d00', fontSize: 12,
+        }}>
+          ⚠️ Debes ver el anuncio completo para ganar las pistas
+        </div>
+      )}
+
       {/* Number pad */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9,1fr)', gap: 4, width: '100%', maxWidth: 420, marginTop: 14 }}>
         {[1,2,3,4,5,6,7,8,9].map(n => {
@@ -328,11 +361,32 @@ export default function SudokuBoard({ levelId = 'beginner', onComplete, onGiveUp
         >
           ✎ {t('game.notes')}{noteMode ? ' ON' : ''}
         </button>
+
+        {/* Botón de pista normal */}
         {hints > 0 && (
           <button onClick={handleHint} style={btnStyle(theme)}>
             💡 {t('game.hint')} ({hints})
           </button>
         )}
+
+        {/* Botón de anuncio para +3 pistas (cuando se acabaron) */}
+        {showAdHintBtn && (
+          <button
+            onClick={handleAdHint}
+            disabled={adHintState === 'loading'}
+            style={{
+              ...btnStyle(theme),
+              background: adHintState === 'loading' ? theme.border + '44' : 'linear-gradient(135deg, #ffd700, #ff8f00)',
+              color: adHintState === 'loading' ? theme.text : '#0d1b2a',
+              fontWeight: '700',
+              border: 'none',
+              opacity: adHintState === 'loading' ? 0.6 : 1,
+            }}
+          >
+            {adHintState === 'loading' ? '⏳' : '📺 +3 💡'}
+          </button>
+        )}
+
         <button onClick={() => onGiveUp?.()} style={{ ...btnStyle(theme), color: theme.error }}>
           🏳 {t('game.giveUp')}
         </button>
