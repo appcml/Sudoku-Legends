@@ -108,7 +108,7 @@ export default function GameComplete({ result, onNewGame, onHome, onWatchAd }) {
         >
           {adState === 'loading'
             ? <span>📺 Cargando anuncio...</span>
-            : <span>📺 Ver anuncio · +150 pts</span>
+            : <span>📺 Ver anuncio · +150 pts 🎁</span>
           }
         </button>
       )}
