@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { THEMES } from '../lib/themes';
 import { LEVELS } from '../lib/sudoku';
+import { showRewardedAd, canWatchAd } from '../lib/adsService';
 
 export default function GameComplete({ result, onNewGame, onHome, onWatchAd }) {
   const { t } = useTranslation();
@@ -9,16 +10,22 @@ export default function GameComplete({ result, onNewGame, onHome, onWatchAd }) {
   const theme = THEMES[levelId];
   const level = LEVELS[levelId];
   const [adWatched, setAdWatched] = useState(false);
-  const [showAdAnim, setShowAdAnim] = useState(false);
+  const [adState, setAdState] = useState('idle'); // 'idle' | 'loading' | 'incomplete'
+
+  const adAvailable = canWatchAd();
 
   const handleWatchAd = async () => {
-    // In production: call AdMob rewarded ad here
-    // For now: simulate with timeout
-    setShowAdAnim(true);
-    await new Promise(r => setTimeout(r, 2000));
-    setShowAdAnim(false);
-    setAdWatched(true);
-    onWatchAd?.(150);
+    setAdState('loading');
+    const rewarded = await showRewardedAd({ testMode: !import.meta.env.PROD });
+    if (rewarded) {
+      setAdWatched(true);
+      setAdState('idle');
+      onWatchAd?.(150);
+    } else {
+      // El usuario cerró el anuncio antes de completarlo
+      setAdState('incomplete');
+      setTimeout(() => setAdState('idle'), 3000);
+    }
   };
 
   const stars = errors === 0 ? 3 : errors <= 3 ? 2 : 1;
@@ -80,28 +87,65 @@ export default function GameComplete({ result, onNewGame, onHome, onWatchAd }) {
       </div>
 
       {/* Ad reward button */}
-      {!adWatched && (
+      {!adWatched && adAvailable && (
         <button
           onClick={handleWatchAd}
-          disabled={showAdAnim}
+          disabled={adState === 'loading'}
           style={{
             width: '100%', maxWidth: 320,
             padding: '16px',
-            background: 'linear-gradient(135deg, #ffd700, #ff8f00)',
+            background: adState === 'loading'
+              ? '#888'
+              : 'linear-gradient(135deg, #ffd700, #ff8f00)',
             border: 'none', borderRadius: 14,
             color: '#0d1b2a', fontSize: 16, fontWeight: '700',
             fontFamily: theme.font,
-            cursor: 'pointer',
+            cursor: adState === 'loading' ? 'not-allowed' : 'pointer',
             marginBottom: 10,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            transition: 'background 0.2s',
           }}
         >
-          {showAdAnim ? (
-            <span>📺 Cargando anuncio...</span>
-          ) : (
-            <span>📺 {t('game.watchAd')}</span>
-          )}
+          {adState === 'loading'
+            ? <span>📺 Cargando anuncio...</span>
+            : <span>📺 Ver anuncio · +150 pts</span>
+          }
         </button>
+      )}
+
+      {/* No hay más anuncios disponibles hoy */}
+      {!adWatched && !adAvailable && (
+        <div style={{
+          width: '100%', maxWidth: 320,
+          padding: '12px',
+          background: theme.border + '22',
+          border: `1px solid ${theme.border}`,
+          borderRadius: 12,
+          textAlign: 'center',
+          color: theme.text,
+          opacity: 0.5,
+          fontSize: 13,
+          marginBottom: 10,
+        }}>
+          📺 Sin anuncios disponibles por ahora
+        </div>
+      )}
+
+      {/* Anuncio no completado */}
+      {adState === 'incomplete' && (
+        <div style={{
+          width: '100%', maxWidth: 320,
+          padding: '10px',
+          background: '#ff3d0022',
+          border: '1px solid #ff3d00',
+          borderRadius: 10,
+          textAlign: 'center',
+          color: '#ff3d00',
+          fontSize: 13,
+          marginBottom: 8,
+        }}>
+          ⚠️ Debes ver el anuncio completo para ganar los puntos
+        </div>
       )}
 
       {adWatched && (
