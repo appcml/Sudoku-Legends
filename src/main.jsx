@@ -5,11 +5,10 @@ import App from './App.jsx';
 import './i18n';
 import { initAds } from './lib/adsService';
 
-// Inicializar AdMob al arrancar. testMode=true en desarrollo, false en producción.
+// Inicializar AdMob: testMode=true en desarrollo, false en producción
 initAds({ testMode: !import.meta.env.PROD });
 
-const root = document.getElementById('root');
-createRoot(root).render(
+createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
       <App />
